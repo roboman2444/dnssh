@@ -10,8 +10,8 @@
 #include <dlfcn.h>
 
 #include "dnssh.h"
-#include "proxy.h"
-#include "proxy_getaddrinfo.h"
+#include "client.h"
+#include "client_getaddrinfo.h"
 
 //#define HOOKDLSYM
 #ifdef HOOKDLSYM
@@ -25,7 +25,7 @@ struct hostent  * (*gethostbyname_orig)(const char *name) = 0;
 struct hostent  * (*gethostbyname2_orig)(const char *name, int af) = 0;
 int (*getaddrinfo_orig)(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res) = 0;
 
-int init(void){
+int dnssh_init(void){
 	char *hostname = getenv("DNSSHHOST");
 	if(!hostname){
 		hostname = "localhost";
@@ -40,7 +40,7 @@ int init(void){
 	}
 
 
-	proxy_init(hostname, port);
+	client_init(hostname, port);
 
 	if(!getaddrinfo_orig && !(getaddrinfo_orig = real_dlsym(RTLD_NEXT, "getaddrinfo"))){
 		printf("DNSSH: unable to get origional getaddrinfo, exiting\n");
@@ -59,21 +59,23 @@ int init(void){
 
 int getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res){
 	printf("\nDNSSH: dns request (getaddrinfo) node: %s, service: %s, hints? %s\n", node, service, hints ? "yes": "no");
-	if(!getaddrinfo_orig) init();
+	if(!getaddrinfo_orig) dnssh_init();
 //	return getaddrinfo_orig(node, service, hints, res);
-	return proxy_getaddrinfo(node, service, hints, res);
+	return client_getaddrinfo(node, service, hints, res);
 }
 
 struct hostent *gethostbyname(const char *name){
 	printf("\nDNSSH: dns request (gethostbyname) for %s\n", name);
-	if(!gethostbyname_orig) init();
-	return gethostbyname_orig(name);
+	if(!gethostbyname_orig) dnssh_init();
+//	return gethostbyname_orig(name);
+	return 0;
 }
 
 struct hostent *gethostbyname2(const char *name, int af){
 	printf("\nDNSSH: dns request (gethostbyname2) for %s, af %i\n", name, af);
-	if(!gethostbyname2_orig) init();
-	return gethostbyname2_orig(name, af);
+	if(!gethostbyname2_orig) dnssh_init();
+//	return gethostbyname2_orig(name, af);
+	return 0;
 }
 
 
@@ -99,7 +101,7 @@ extern void * dlsym(void * handle, const char * symbol){
 		return getaddrinfo;
 	}
 
-	init();
+	dnssh_init();
 	return ret;
 }
 #endif
