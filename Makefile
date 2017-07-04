@@ -1,7 +1,7 @@
 CC = gcc
 LDFLAGS =-ldl -shared -Wl,-soname,dnssh.so
 CFLAGS = -Wall -Ofast -fstrict-aliasing -march=native -fPIC
-OBJECTS = dnssh.o
+OBJECTS = dnssh.o proxy.o proxy_getaddrinfo.o
 
 %.o: %.c
 	$(CC) $(CFLAGS) -c -o $@ $<
